@@ -27,9 +27,8 @@ enum NodeTag {
 
 #[derive(Copy, Clone)]
 #[repr(packed)]
-#[allow(dead_code)]
 struct InnerNode {
-    tag: u32,
+    _tag: u32,
     prefix_len: u32,
     key: u128,
     children: [u32; 2],
@@ -126,9 +125,8 @@ impl LeafNode {
 
 #[derive(Copy, Clone)]
 #[repr(packed)]
-#[allow(dead_code)]
 struct FreeNode {
-    tag: u32,
+    _tag: u32,
     next: u32,
     _padding: [u64; 8],
 }
@@ -160,10 +158,9 @@ const_assert_eq!(_NODE_ALIGN, _FREE_NODE_ALIGN);
 
 #[derive(Copy, Clone)]
 #[repr(packed)]
-#[allow(dead_code)]
 pub struct AnyNode {
     tag: u32,
-    data: [u32; 17],
+    _data: [u32; 17],
 }
 unsafe impl Zeroable for AnyNode {}
 unsafe impl Pod for AnyNode {}
@@ -174,7 +171,6 @@ enum NodeRef<'a> {
 }
 
 enum NodeRefMut<'a> {
-    Inner(&'a mut InnerNode),
     Leaf(&'a mut LeafNode),
 }
 
@@ -201,7 +197,7 @@ impl AnyNode {
         }
     }
 
-    fn case(&self) -> Option<NodeRef> {
+    fn case(&self) -> Option<NodeRef<'_>> {
         match NodeTag::try_from(self.tag) {
             Ok(NodeTag::InnerNode) => Some(NodeRef::Inner(cast_ref(self))),
             Ok(NodeTag::LeafNode) => Some(NodeRef::Leaf(cast_ref(self))),
@@ -209,9 +205,8 @@ impl AnyNode {
         }
     }
 
-    fn case_mut(&mut self) -> Option<NodeRefMut> {
+    fn case_mut(&mut self) -> Option<NodeRefMut<'_>> {
         match NodeTag::try_from(self.tag) {
-            Ok(NodeTag::InnerNode) => Some(NodeRefMut::Inner(cast_mut(self))),
             Ok(NodeTag::LeafNode) => Some(NodeRefMut::Leaf(cast_mut(self))),
             _ => None,
         }
@@ -468,7 +463,7 @@ impl SlabView<AnyNode> for Slab {
         let any_node_ref = &mut nodes[key as usize];
         let free_node_ref: &mut FreeNode = cast_mut(any_node_ref);
         *free_node_ref = FreeNode {
-            tag: if header.free_list_len == 0 {
+            _tag: if header.free_list_len == 0 {
                 NodeTag::LastFreeNode.into()
             } else {
                 NodeTag::FreeNode.into()
@@ -585,7 +580,7 @@ impl Slab {
 
             let new_root: &mut InnerNode = cast_mut(self.get_mut(root).unwrap());
             *new_root = InnerNode {
-                tag: NodeTag::InnerNode.into(),
+                _tag: NodeTag::InnerNode.into(),
                 prefix_len: shared_prefix_len,
                 key: new_leaf.key,
                 children: [0; 2],

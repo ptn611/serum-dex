@@ -207,7 +207,7 @@ pub struct MarketStateV2 {
     pub prune_authority: Pubkey,
     pub consume_events_authority: Pubkey,
     // Unused bytes for future upgrades.
-    padding: [u8; 992],
+    _padding: [u8; 992],
 }
 
 impl Deref for MarketStateV2 {
@@ -577,7 +577,7 @@ impl MarketState {
     }
 
     fn pubkey(&self) -> Pubkey {
-        Pubkey::new(cast_slice(&identity(self.own_address) as &[_]))
+        Pubkey::from(cast::<_, [u8; 32]>(identity(self.own_address)))
     }
 }
 
@@ -938,7 +938,7 @@ pub struct Request {
     owner_slot: u8,
     fee_tier: u8,
     self_trade_behavior: u8,
-    padding: [u8; 4],
+    _padding: [u8; 4],
     max_coin_qty_or_cancel_id: u64,
     native_pc_qty_locked: u64,
     order_id: u128,
@@ -1003,7 +1003,7 @@ impl Request {
                     owner_slot,
                     fee_tier: fee_tier.into(),
                     self_trade_behavior: self_trade_behavior.into(),
-                    padding: Zeroable::zeroed(),
+                    _padding: Zeroable::zeroed(),
                     order_id,
                     owner,
                     max_coin_qty_or_cancel_id: max_coin_qty.get(),
@@ -1032,7 +1032,7 @@ impl Request {
                     self_trade_behavior: 0,
                     owner: expected_owner,
                     native_pc_qty_locked: 0,
-                    padding: Zeroable::zeroed(),
+                    _padding: Zeroable::zeroed(),
                     client_order_id: client_order_id.map_or(0, NonZeroU64::get),
                 }
             }
@@ -1608,8 +1608,8 @@ pub(crate) mod account_parser {
         }
     }
 
-    pub struct InitializeMarketArgs<'a, 'b: 'a> {
-        pub program_id: &'a Pubkey,
+        pub struct InitializeMarketArgs<'a, 'b: 'a> {
+        pub _program_id: &'a Pubkey,
         pub instruction: &'a InitializeMarketInstruction,
         serum_dex_accounts: &'a [AccountInfo<'b>; 5],
         pub coin_vault_and_mint: TokenAccountAndMint<'a, 'b>,
@@ -1630,7 +1630,7 @@ pub(crate) mod account_parser {
                 unchecked_serum_dex_accounts,
                 unchecked_vaults,
                 unchecked_mints,
-                unchecked_rent,
+                _unchecked_rent,
                 remaining_accounts,
             ) = array_refs![accounts, 5, 2, 2, 1; .. ;];
 
@@ -1697,7 +1697,7 @@ pub(crate) mod account_parser {
             };
 
             Ok(InitializeMarketArgs {
-                program_id,
+                _program_id: program_id,
                 instruction,
                 serum_dex_accounts,
                 coin_vault_and_mint,
@@ -1729,18 +1729,18 @@ pub(crate) mod account_parser {
         }
     }
 
-    pub struct SendTakeArgs<'a, 'b: 'a> {
-        pub instruction: &'a SendTakeInstruction,
-        pub signer: SignerAccount<'a, 'b>,
-        pub req_q: RequestQueue<'a>,
-        pub event_q: EventQueue<'a>,
-        pub order_book_state: OrderBookState<'a>,
-        pub coin_wallet: CoinWallet<'a, 'b>,
-        pub pc_wallet: PcWallet<'a, 'b>,
-        pub coin_vault: CoinVault<'a, 'b>,
-        pub pc_vault: PcVault<'a, 'b>,
-        pub spl_token_program: SplTokenProgram<'a, 'b>,
-        pub fee_tier: FeeTier,
+        pub struct SendTakeArgs<'a, 'b: 'a> {
+        pub _instruction: &'a SendTakeInstruction,
+        pub _signer: SignerAccount<'a, 'b>,
+        pub _req_q: RequestQueue<'a>,
+        pub _event_q: EventQueue<'a>,
+        pub _order_book_state: OrderBookState<'a>,
+        pub _coin_wallet: CoinWallet<'a, 'b>,
+        pub _pc_wallet: PcWallet<'a, 'b>,
+        pub _coin_vault: CoinVault<'a, 'b>,
+        pub _pc_vault: PcVault<'a, 'b>,
+        pub _spl_token_program: SplTokenProgram<'a, 'b>,
+        pub _fee_tier: FeeTier,
     }
     impl<'a, 'b: 'a> SendTakeArgs<'a, 'b> {
         pub fn with_parsed_args<T>(
@@ -1801,17 +1801,17 @@ pub(crate) mod account_parser {
             };
 
             let args = SendTakeArgs {
-                instruction,
-                signer,
-                req_q,
-                event_q,
-                fee_tier,
-                coin_wallet,
-                pc_wallet,
-                coin_vault,
-                pc_vault,
-                order_book_state,
-                spl_token_program,
+                _instruction: instruction,
+                _signer: signer,
+                _req_q: req_q,
+                _event_q: event_q,
+                _fee_tier: fee_tier,
+                _coin_wallet: coin_wallet,
+                _pc_wallet: pc_wallet,
+                _coin_vault: coin_vault,
+                _pc_vault: pc_vault,
+                _order_book_state: order_book_state,
+                _spl_token_program: spl_token_program,
             };
             f(args)
         }
@@ -1860,7 +1860,7 @@ pub(crate) mod account_parser {
                 ref coin_vault_acc,
                 ref pc_vault_acc,
                 ref spl_token_program_acc,
-                ref rent_sysvar_acc,
+                ref _rent_sysvar_acc,
             ]: &'a [AccountInfo<'b>; MIN_ACCOUNTS] = fixed_accounts;
             let srm_or_msrm_account = match fee_discount_account {
                 &[] => None,
@@ -2034,11 +2034,11 @@ pub(crate) mod account_parser {
         }
     }
 
-    pub struct CancelOrderV2Args<'a, 'b: 'a> {
+        pub struct CancelOrderV2Args<'a, 'b: 'a> {
         pub instruction: &'a CancelOrderInstructionV2,
         pub open_orders_address: [u64; 4],
         pub open_orders: &'a mut OpenOrders,
-        pub open_orders_signer: SignerAccount<'a, 'b>,
+        pub _open_orders_signer: SignerAccount<'a, 'b>,
         pub order_book_state: OrderBookState<'a>,
         pub event_q: EventQueue<'a>,
     }
@@ -2087,7 +2087,7 @@ pub(crate) mod account_parser {
                 instruction,
                 open_orders_address,
                 open_orders: open_orders.deref_mut(),
-                open_orders_signer,
+                _open_orders_signer: open_orders_signer,
                 order_book_state,
                 event_q,
             };
@@ -2095,11 +2095,11 @@ pub(crate) mod account_parser {
         }
     }
 
-    pub struct CancelOrderByClientIdV2Args<'a, 'b: 'a> {
+        pub struct CancelOrderByClientIdV2Args<'a, 'b: 'a> {
         pub client_order_id: NonZeroU64,
         pub open_orders_address: [u64; 4],
         pub open_orders: &'a mut OpenOrders,
-        pub open_orders_signer: SignerAccount<'a, 'b>,
+        pub _open_orders_signer: SignerAccount<'a, 'b>,
         pub order_book_state: OrderBookState<'a>,
         pub event_q: EventQueue<'a>,
     }
@@ -2150,7 +2150,7 @@ pub(crate) mod account_parser {
                 client_order_id,
                 open_orders_address,
                 open_orders: open_orders.deref_mut(),
-                open_orders_signer,
+                _open_orders_signer: open_orders_signer,
                 order_book_state,
                 event_q,
             };
@@ -2158,11 +2158,11 @@ pub(crate) mod account_parser {
         }
     }
 
-    pub struct CancelOrdersByClientIdsArgs<'a, 'b: 'a> {
+        pub struct CancelOrdersByClientIdsArgs<'a, 'b: 'a> {
         pub client_order_ids: &'a [NonZeroU64],
         pub open_orders_address: [u64; 4],
         pub open_orders: &'a mut OpenOrders,
-        pub open_orders_signer: SignerAccount<'a, 'b>,
+        pub _open_orders_signer: SignerAccount<'a, 'b>,
         pub order_book_state: OrderBookState<'a>,
         pub event_q: EventQueue<'a>,
     }
@@ -2217,7 +2217,7 @@ pub(crate) mod account_parser {
                 client_order_ids: client_order_ids.as_slice(),
                 open_orders_address,
                 open_orders: open_orders.deref_mut(),
-                open_orders_signer,
+                _open_orders_signer: open_orders_signer,
                 order_book_state,
                 event_q,
             };
@@ -2300,9 +2300,9 @@ pub(crate) mod account_parser {
         }
     }
 
-    pub struct DisableMarketArgs<'a, 'b: 'a> {
+        pub struct DisableMarketArgs<'a, 'b: 'a> {
         pub market: &'a mut MarketState,
-        pub authorization: SigningDisableAuthority<'a, 'b>,
+        pub _authorization: SigningDisableAuthority<'a, 'b>,
     }
     impl<'a, 'b: 'a> DisableMarketArgs<'a, 'b> {
         pub fn with_parsed_args<T>(
@@ -2317,19 +2317,19 @@ pub(crate) mod account_parser {
 
             let args = DisableMarketArgs {
                 market: market.deref_mut(),
-                authorization,
+                _authorization: authorization,
             };
             f(args)
         }
     }
 
-    pub struct SweepFeesArgs<'a, 'b: 'a> {
+        pub struct SweepFeesArgs<'a, 'b: 'a> {
         pub market: Market<'a>,
         pub pc_vault: PcVault<'a, 'b>,
         pub fee_receiver: PcWallet<'a, 'b>,
         pub vault_signer: VaultSigner<'a, 'b>,
         pub spl_token_program: SplTokenProgram<'a, 'b>,
-        pub authorization: SigningFeeSweeper<'a, 'b>,
+        pub _authorization: SigningFeeSweeper<'a, 'b>,
     }
     impl<'a, 'b: 'a> SweepFeesArgs<'a, 'b> {
         pub fn with_parsed_args<T>(
@@ -2361,13 +2361,13 @@ pub(crate) mod account_parser {
                 fee_receiver,
                 vault_signer,
                 spl_token_program,
-                authorization,
+                _authorization: authorization,
             };
             f(args)
         }
     }
 
-    pub struct CloseOpenOrdersArgs<'a, 'b: 'a> {
+        pub struct CloseOpenOrdersArgs<'a, 'b: 'a> {
         pub open_orders: &'a mut OpenOrders,
         pub open_orders_acc: &'a AccountInfo<'b>,
         pub dest_acc: &'a AccountInfo<'b>,
@@ -2441,7 +2441,7 @@ pub(crate) mod account_parser {
                 ref open_orders_acc,
                 ref owner_acc,
                 ref market_acc,
-                ref rent_acc,
+                ref _rent_acc,
             ] = array_ref![accounts, 0, 4];
 
             let oo_authority = (&accounts[4..])
@@ -2761,7 +2761,7 @@ impl State {
     fn process_settle_funds(args: account_parser::SettleFundsArgs) -> DexResult {
         let account_parser::SettleFundsArgs {
             mut market,
-            mut open_orders,
+            open_orders,
             coin_vault,
             pc_vault,
             coin_wallet,
@@ -2849,7 +2849,7 @@ impl State {
             client_order_id,
             open_orders_address,
             open_orders,
-            open_orders_signer: _,
+            _open_orders_signer: _,
 
             mut order_book_state,
             mut event_q,
@@ -2875,7 +2875,7 @@ impl State {
             client_order_ids,
             open_orders_address,
             open_orders,
-            open_orders_signer: _,
+            _open_orders_signer: _,
 
             mut order_book_state,
             mut event_q,
@@ -2907,7 +2907,7 @@ impl State {
 
             open_orders_address,
             open_orders,
-            open_orders_signer: _,
+            _open_orders_signer: _,
 
             mut order_book_state,
             mut event_q,
@@ -3198,7 +3198,6 @@ impl State {
 
         use solana_program::clock::Clock;
 
-        use crate::error::DexError;
         drop(open_orders);
 
         if deposit_amount != 0 {
@@ -3270,7 +3269,7 @@ impl State {
     fn process_disable_market(args: account_parser::DisableMarketArgs) -> DexResult {
         let account_parser::DisableMarketArgs {
             market,
-            authorization: _,
+            _authorization: _,
         } = args;
         market.account_flags = market.account_flags | (AccountFlag::Disabled as u64);
         Ok(())
@@ -3284,7 +3283,7 @@ impl State {
             fee_receiver,
             vault_signer,
             spl_token_program,
-            authorization: _,
+            _authorization: _,
         } = args;
         let token_amount = market.pc_fees_accrued;
         market.pc_fees_accrued = 0;
