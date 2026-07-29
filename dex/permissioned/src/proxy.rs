@@ -33,12 +33,7 @@ impl<'a> MarketProxy<'a> {
     }
 
     /// Entrypoint to the program.
-    pub fn run(
-        mut self,
-        program_id: &Pubkey,
-        accounts: &[AccountInfo],
-        data: &[u8],
-    ) -> Result<()> {
+    pub fn run(mut self, program_id: &Pubkey, accounts: &[AccountInfo], data: &[u8]) -> Result<()> {
         let mut ix_data = data;
 
         // First account is the Serum DEX executable--used for CPI.

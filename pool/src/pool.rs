@@ -79,7 +79,7 @@ pub trait Pool {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         instruction_data: &[u8],
-    ) -> Result<()> {
+    ) -> ProgramResult {
         Err(ProgramError::InvalidInstructionData)
     }
 }
