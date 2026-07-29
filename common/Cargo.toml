@@ -3,7 +3,7 @@ name = "serum-common"
 version = "0.1.0"
 description = "Serum common utilities"
 repository = "https://github.com/project-serum/serum-dex"
-edition = "2018"
+edition = "2024"
 
 [features]
 program = ["spl-token/program", "solana-sdk/program", "solana-program"]

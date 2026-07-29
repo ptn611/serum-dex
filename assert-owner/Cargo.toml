@@ -4,7 +4,7 @@
 name = "serum_assert_owner"
 version = "0.1.0"
 repository = "https://github.com/project-serum/serum-dex"
-edition = "2018"
+edition = "2024"
 
 [dependencies]
 solana-program = "1.4.3"

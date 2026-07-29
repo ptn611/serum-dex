@@ -2,7 +2,7 @@
 name = "serum-pool-schema"
 version = "0.1.0"
 authors = ["Sebastian Conybeare <sebastian@projectserum.com>"]
-edition = "2018"
+edition = "2024"
 
 [features]
 program = []

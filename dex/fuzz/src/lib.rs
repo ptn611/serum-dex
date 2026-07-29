@@ -5,7 +5,6 @@ use bumpalo::Bump;
 use safe_transmute::to_bytes::{transmute_to_bytes, transmute_to_bytes_mut};
 use solana_program::account_info::AccountInfo;
 use solana_program::bpf_loader;
-use solana_program::clock::Epoch;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::instruction::Instruction;
 use solana_program::program_pack::Pack;
@@ -52,7 +51,6 @@ pub fn new_sol_account_with_pubkey<'bump>(
         &mut [],
         &system_program::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -85,7 +83,6 @@ pub fn new_dex_owned_account_with_lamports<'bump>(
         allocate_dex_owned_account(unpadded_len, bump),
         program_id,
         false,
-        Epoch::default(),
     )
 }
 
@@ -102,7 +99,6 @@ pub fn new_token_mint(bump: &Bump, rent: Rent) -> AccountInfo {
         data,
         &spl_token::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -128,7 +124,6 @@ pub fn new_token_account<'bump, 'a, 'b>(
         data,
         &spl_token::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -141,7 +136,6 @@ pub fn new_spl_token_program(bump: &Bump) -> AccountInfo {
         &mut [],
         &bpf_loader::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -155,7 +149,6 @@ fn new_rent_sysvar_account(lamports: u64, rent: Rent, bump: &Bump) -> AccountInf
         data,
         &sysvar::ID,
         false,
-        Epoch::default(),
     );
     rent.to_account_info(&mut account_info).unwrap();
     account_info
@@ -178,7 +171,6 @@ fn new_vault_signer_account<'bump>(
                     &mut [],
                     &system_program::ID,
                     false,
-                    Epoch::default(),
                 ),
             );
         }

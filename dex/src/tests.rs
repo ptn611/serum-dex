@@ -5,15 +5,14 @@ use std::num::NonZeroU64;
 use bumpalo::{collections::Vec as BumpVec, vec as bump_vec, Bump};
 use rand::prelude::*;
 use safe_transmute::to_bytes::{transmute_to_bytes, transmute_to_bytes_mut};
-use solana_program::account_info::AccountInfo;
-use solana_program::bpf_loader;
-use solana_program::clock::Epoch;
-use solana_program::program_pack::Pack;
-use solana_program::pubkey::Pubkey;
-use solana_program::rent::Rent;
-use solana_program::system_program;
-use solana_program::sysvar;
-use solana_program::sysvar::Sysvar;
+use anchor_lang::solana_program::account_info::AccountInfo;
+use anchor_lang::solana_program::bpf_loader;
+use anchor_lang::solana_program::program_pack::Pack;
+use anchor_lang::solana_program::pubkey::Pubkey;
+use anchor_lang::solana_program::rent::Rent;
+use anchor_lang::solana_program::system_program;
+use anchor_lang::solana_program::rent;
+use solana_sysvar::Sysvar;
 use spl_token::state::{Account, AccountState, Mint};
 
 use instruction::{initialize_market, MarketInstruction, NewOrderInstructionV3, SelfTradeBehavior};
@@ -62,14 +61,13 @@ fn new_rent_sysvar_account<'bump>(
 ) -> AccountInfo<'bump> {
     let data = bump_vec![in bump; 0u8; size_of::<Rent>()].into_bump_slice_mut();
     let mut account_info = AccountInfo::new(
-        &sysvar::rent::ID,
+        &rent::ID,
         false,
         false,
         bump.alloc(lamports),
         data,
         &sysvar::ID,
         false,
-        Epoch::default(),
     );
     rent.to_account_info(&mut account_info).unwrap();
     account_info
@@ -88,7 +86,6 @@ fn new_sol_account<'bump, Gen: Rng>(
         &mut [],
         &system_program::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -106,7 +103,6 @@ fn new_dex_owned_account<'bump, Gen: Rng>(
         allocate_dex_owned_account(unpadded_len, bump),
         program_id,
         false,
-        Epoch::default(),
     )
 }
 
@@ -123,7 +119,6 @@ fn new_token_mint<'bump, Gen: Rng>(rng: &mut Gen, bump: &'bump Bump) -> AccountI
         data,
         &spl_token::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -149,7 +144,6 @@ fn new_token_account<'bump, Gen: Rng>(
         data,
         &spl_token::ID,
         false,
-        Epoch::default(),
     )
 }
 
@@ -162,7 +156,6 @@ fn new_spl_token_program<'bump>(bump: &'bump Bump) -> AccountInfo<'bump> {
         &mut [],
         &bpf_loader::ID,
         false,
-        Epoch::default(),
     )
 }
 

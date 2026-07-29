@@ -842,10 +842,10 @@ mod tests {
             assert_eq!(slab.find_max(), None);
 
             for i in 0..100 {
-                let offset = rng.gen();
-                let key = rng.gen();
-                let owner = rng.gen();
-                let qty = rng.gen();
+                let offset = rng.r#gen();
+                let key = rng.r#gen();
+                let owner = rng.r#gen();
+                let qty = rng.r#gen();
                 let leaf = LeafNode::new(offset, key, owner, qty, FeeTier::Base, 0);
 
                 println!("{:x}", key);
@@ -857,7 +857,7 @@ mod tests {
 
                 // test find_by_key
                 let valid_search_key = *all_keys.choose(&mut rng).unwrap();
-                let invalid_search_key = rng.gen();
+                let invalid_search_key = rng.r#gen();
 
                 for &search_key in &[valid_search_key, invalid_search_key] {
                     let slab_value = slab
@@ -933,14 +933,14 @@ mod tests {
 
                 match weights[dist.sample(&mut rng)].0 {
                     op @ Op::InsertNew | op @ Op::InsertDup => {
-                        let offset = rng.gen();
+                        let offset = rng.r#gen();
                         let key = match op {
-                            Op::InsertNew => rng.gen(),
+                            Op::InsertNew => rng.r#gen(),
                             Op::InsertDup => *all_keys.choose(&mut rng).unwrap(),
                             _ => unreachable!(),
                         };
-                        let owner = rng.gen();
-                        let qty = rng.gen();
+                        let owner = rng.r#gen();
+                        let qty = rng.r#gen();
                         let leaf = LeafNode::new(offset, key, owner, qty, FeeTier::SRM5, 5);
 
                         println!("Insert {:x}", key);
@@ -957,7 +957,7 @@ mod tests {
                         let key = all_keys
                             .choose(&mut rng)
                             .map(|x| *x)
-                            .unwrap_or_else(|| rng.gen());
+                            .unwrap_or_else(|| rng.r#gen());
 
                         println!("Remove {:x}", key);
 
