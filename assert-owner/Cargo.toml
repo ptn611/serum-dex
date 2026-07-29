@@ -7,7 +7,7 @@ repository = "https://github.com/project-serum/serum-dex"
 edition = "2024"
 
 [dependencies]
-solana-program = "1.4.3"
+solana-program = "3"
 
 [lib]
 crate-type = ["cdylib", "lib"]

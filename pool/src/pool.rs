@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
+    account_info::AccountInfo, ProgramResult, program_error::ProgramError,
     pubkey::Pubkey,
 };
 
@@ -79,7 +79,7 @@ pub trait Pool {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         instruction_data: &[u8],
-    ) -> ProgramResult {
+    ) -> Result<()> {
         Err(ProgramError::InvalidInstructionData)
     }
 }

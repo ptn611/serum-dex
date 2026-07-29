@@ -38,7 +38,7 @@ impl<'a> MarketProxy<'a> {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         data: &[u8],
-    ) -> ProgramResult {
+    ) -> Result<()> {
         let mut ix_data = data;
 
         // First account is the Serum DEX executable--used for CPI.

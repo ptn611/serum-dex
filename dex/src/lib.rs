@@ -15,7 +15,7 @@ pub mod state;
 #[cfg(all(feature = "program", not(feature = "no-entrypoint")))]
 use anchor_lang::solana_program::entrypoint;
 #[cfg(all(feature = "program", not(feature = "no-entrypoint")))]
-use anchor_lang::solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
+use anchor_lang::solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 #[cfg(all(feature = "program", not(feature = "no-entrypoint")))]
 entrypoint!(process_instruction);
@@ -24,7 +24,7 @@ fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
-) -> ProgramResult {
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
     Ok(state::State::process(
         program_id,
         accounts,

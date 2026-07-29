@@ -10,7 +10,7 @@ default = []
 
 [dependencies]
 serum-borsh = "0.8.1-serum.1"
-solana-program = "1.4.14"
+solana-program = "3"
 
 [[bin]]
 name = "print-schema"

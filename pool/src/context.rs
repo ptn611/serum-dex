@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use crate::next_account_infos;
 use serum_pool_schema::{
-    Address, Basket, PoolRequestInner, PoolState, FEE_RATE_DENOMINATOR, MIN_FEE_RATE,
+    Address, Basket, FEE_RATE_DENOMINATOR, MIN_FEE_RATE, PoolRequestInner, PoolState,
 };
 use solana_program;
 use solana_program::account_info::next_account_info;
@@ -10,7 +10,7 @@ use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::program;
 use solana_program::program_option::COption;
 use solana_program::program_pack::Pack;
-use solana_program::sysvar::{rent, Sysvar};
+use solana_program::sysvar::{Sysvar, rent};
 use solana_program::{account_info::AccountInfo, msg, program_error::ProgramError, pubkey::Pubkey};
 use spl_token::state::{Account as TokenAccount, Mint};
 use std::cmp::{max, min};

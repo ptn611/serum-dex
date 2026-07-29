@@ -5,7 +5,7 @@ use bumpalo::Bump;
 use safe_transmute::to_bytes::{transmute_to_bytes, transmute_to_bytes_mut};
 use solana_program::account_info::AccountInfo;
 use solana_program::bpf_loader;
-use solana_program::entrypoint::ProgramResult;
+use solana_program::ProgramResult;
 use solana_program::instruction::Instruction;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
@@ -368,7 +368,7 @@ impl solana_program::program_stubs::SyscallStubs for NoSolLoggingStubs {
         _instruction: &Instruction,
         _account_infos: &[AccountInfo],
         _signers_seeds: &[&[&[u8]]],
-    ) -> ProgramResult {
+    ) -> Result<()> {
         unimplemented!()
     }
 }
