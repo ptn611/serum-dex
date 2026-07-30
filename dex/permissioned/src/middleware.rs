@@ -1,12 +1,14 @@
 use crate::{open_orders_authority, open_orders_init_authority};
-use anchor_lang::prelude::*;
-use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::solana_program::system_program;
 use anchor_lang::Accounts;
-use anchor_spl::{dex, token};
+use anchor_lang::prelude::*;
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
+use anchor_lang::solana_program::system_program;
+use std::str::FromStr;
+use anchor_spl::token;
 use serum_dex::instruction::*;
 use serum_dex::matching::Side;
 use serum_dex::state::OpenOrders;
+use std::collections::BTreeSet;
 use std::mem::size_of;
 
 /// Per request context. Can be used to share data between middleware handlers.
@@ -81,11 +83,7 @@ pub trait MarketMiddleware {
         Ok(())
     }
 
-    fn cancel_order_by_client_id_v2(
-        &self,
-        _ctx: &mut Context,
-        _client_id: &mut u64,
-    ) -> Result<()> {
+    fn cancel_order_by_client_id_v2(&self, _ctx: &mut Context, _client_id: &mut u64) -> Result<()> {
         Ok(())
     }
 
@@ -164,30 +162,26 @@ impl MarketMiddleware for OpenOrdersPda {
     /// 1..2 Borsh(struct { bump: u8, bump_init: u8 }).
     /// ..
     fn init_open_orders<'a, 'info>(&self, ctx: &mut Context<'a, 'info>) -> Result<()> {
-        let market = &ctx.accounts[4];
-        let user = &ctx.accounts[3];
-
-        // Initialize PDA.
-        let mut accounts = &ctx.accounts[..];
-        InitAccount::try_accounts(ctx.program_id, &mut accounts, &[self.bump, self.bump_init])?;
+        let market_key = *ctx.accounts[4].key;
+        let user_key = *ctx.accounts[3].key;
 
         // Add signer to context.
         ctx.seeds.push(open_orders_authority! {
             program = ctx.program_id,
             dex_program = ctx.dex_program_id,
-            market = market.key,
-            authority = user.key,
+            market = market_key,
+            authority = user_key,
             bump = self.bump
         });
         ctx.seeds.push(open_orders_init_authority! {
             program = ctx.program_id,
             dex_program = ctx.dex_program_id,
-            market = market.key,
+            market = market_key,
             bump = self.bump_init
         });
 
         // Chop off the first two accounts needed for initializing the PDA.
-        ctx.accounts = (&ctx.accounts[2..]).to_vec();
+        ctx.accounts = ctx.accounts[2..].to_vec();
 
         // Set PDAs.
         ctx.accounts[1] = Self::prepare_pda(&ctx.accounts[0]);
@@ -229,14 +223,17 @@ impl MarketMiddleware for OpenOrdersPda {
                     ix.max_coin_qty.get().checked_mul(coin_lot_size).unwrap()
                 }
             };
-            let ix = spl_token::instruction::approve(
-                &spl_token::ID,
-                token_account_payer.key,
-                open_orders.key,
-                user.key,
-                &[],
-                amount,
-            )?;
+            let mut data = vec![4u8]; // Approve instruction index
+            data.extend_from_slice(&amount.to_le_bytes());
+            let ix = Instruction {
+                program_id: anchor_lang::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+                data,
+                accounts: vec![
+                    AccountMeta { pubkey: *token_account_payer.key, is_signer: false, is_writable: true },
+                    AccountMeta { pubkey: *open_orders.key, is_signer: false, is_writable: false },
+                    AccountMeta { pubkey: *user.key, is_signer: true, is_writable: false },
+                ],
+            };
             let accounts = vec![
                 token_account_payer.clone(),
                 open_orders.clone(),
@@ -248,12 +245,15 @@ impl MarketMiddleware for OpenOrdersPda {
 
         // Post: Revoke the PDA's delegate access.
         let post_instruction = {
-            let ix = spl_token::instruction::revoke(
-                &spl_token::ID,
-                token_account_payer.key,
-                user.key,
-                &[],
-            )?;
+            let data = vec![5u8]; // Revoke instruction index
+            let ix = Instruction {
+                program_id: anchor_lang::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+                data,
+                accounts: vec![
+                    AccountMeta { pubkey: *token_account_payer.key, is_signer: false, is_writable: true },
+                    AccountMeta { pubkey: *user.key, is_signer: true, is_writable: false },
+                ],
+            };
             let accounts = vec![token_account_payer.clone(), user.clone()];
             (ix, accounts, Vec::new())
         };
@@ -279,11 +279,7 @@ impl MarketMiddleware for OpenOrdersPda {
     ///
     /// 0.   Discriminant.
     /// ..
-    fn cancel_order_v2(
-        &self,
-        ctx: &mut Context,
-        _ix: &mut CancelOrderInstructionV2,
-    ) -> Result<()> {
+    fn cancel_order_v2(&self, ctx: &mut Context, _ix: &mut CancelOrderInstructionV2) -> Result<()> {
         let market = &ctx.accounts[0];
         let user = &ctx.accounts[4];
         if !user.is_signer {
@@ -310,11 +306,7 @@ impl MarketMiddleware for OpenOrdersPda {
     ///
     /// 0.   Discriminant.
     /// ..
-    fn cancel_order_by_client_id_v2(
-        &self,
-        ctx: &mut Context,
-        _client_id: &mut u64,
-    ) -> Result<()> {
+    fn cancel_order_by_client_id_v2(&self, ctx: &mut Context, _client_id: &mut u64) -> Result<()> {
         let market = &ctx.accounts[0];
         let user = &ctx.accounts[4];
         if !user.is_signer {
@@ -415,20 +407,12 @@ impl MarketMiddleware for Logger {
         Ok(())
     }
 
-    fn cancel_order_v2(
-        &self,
-        _ctx: &mut Context,
-        ix: &mut CancelOrderInstructionV2,
-    ) -> Result<()> {
+    fn cancel_order_v2(&self, _ctx: &mut Context, ix: &mut CancelOrderInstructionV2) -> Result<()> {
         msg!("proxying cancel order v2 {:?}", ix);
         Ok(())
     }
 
-    fn cancel_order_by_client_id_v2(
-        &self,
-        _ctx: &mut Context,
-        client_id: &mut u64,
-    ) -> Result<()> {
+    fn cancel_order_by_client_id_v2(&self, _ctx: &mut Context, client_id: &mut u64) -> Result<()> {
         msg!("proxying cancel order by client id v2 {:?}", client_id);
         Ok(())
     }
@@ -540,7 +524,7 @@ macro_rules! open_orders_init_authority {
 
 // Errors.
 
-#[error(offset = 500)]
+#[error_code]
 pub enum ErrorCode {
     #[msg("Program ID does not match the Serum DEX")]
     InvalidDexPid,
@@ -561,20 +545,20 @@ pub enum ErrorCode {
 #[derive(Accounts)]
 #[instruction(bump: u8, bump_init: u8)]
 pub struct InitAccount<'info> {
-    #[account(address = dex::ID)]
+    #[account(address = DEX_ID)]
     pub dex_program: AccountInfo<'info>,
     #[account(address = system_program::ID)]
     pub system_program: AccountInfo<'info>,
     #[account(
         init,
         seeds = [b"open-orders", dex_program.key.as_ref(), market.key.as_ref(), authority.key.as_ref()],
-        bump = bump,
+        bump,
         payer = authority,
-        owner = dex::ID,
+        owner = DEX_ID,
         space = size_of::<OpenOrders>() + SERUM_PADDING,
     )]
     pub open_orders: AccountInfo<'info>,
-    #[account(signer)]
+    #[account(mut, signer)]
     pub authority: AccountInfo<'info>,
     pub market: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -586,6 +570,10 @@ pub struct InitAccount<'info> {
 }
 
 // Constants.
+
+// The Serum DEX v3 program ID.
+pub const DEX_ID: Pubkey = anchor_lang::pubkey!("srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX");
+
 
 // Padding added to every serum account.
 //

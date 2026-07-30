@@ -6,13 +6,13 @@ use bumpalo::{collections::Vec as BumpVec, vec as bump_vec, Bump};
 use rand::prelude::*;
 use safe_transmute::to_bytes::{transmute_to_bytes, transmute_to_bytes_mut};
 use anchor_lang::solana_program::account_info::AccountInfo;
-use anchor_lang::solana_program::bpf_loader;
+use solana_sdk_ids::bpf_loader;
 use anchor_lang::solana_program::program_pack::Pack;
 use anchor_lang::solana_program::pubkey::Pubkey;
 use anchor_lang::solana_program::rent::Rent;
 use anchor_lang::solana_program::system_program;
 use anchor_lang::solana_program::rent;
-use solana_sysvar::Sysvar;
+use solana_sysvar::{Sysvar, SysvarSerialize};
 use spl_token::state::{Account, AccountState, Mint};
 
 use instruction::{initialize_market, MarketInstruction, NewOrderInstructionV3, SelfTradeBehavior};
@@ -26,7 +26,7 @@ use crate::state::account_parser::CancelOrderByClientIdV2Args;
 use super::*;
 
 fn random_pubkey<'bump, G: rand::Rng>(_rng: &mut G, bump: &'bump Bump) -> &'bump Pubkey {
-    bump.alloc(Pubkey::new(transmute_to_bytes(&rand::random::<[u64; 4]>())))
+    bump.alloc(Pubkey::try_from(transmute_to_bytes(&rand::random::<[u64; 4]>())).unwrap())
 }
 
 struct MarketAccounts<'bump> {
@@ -66,10 +66,10 @@ fn new_rent_sysvar_account<'bump>(
         false,
         bump.alloc(lamports),
         data,
-        &sysvar::ID,
+        &solana_sdk_ids::sysvar::ID,
         false,
     );
-    rent.to_account_info(&mut account_info).unwrap();
+    Rent::to_account_info(&rent, &mut account_info).unwrap();
     account_info
 }
 

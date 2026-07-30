@@ -1,5 +1,6 @@
-use solana_sdk::account_info::AccountInfo;
-use solana_sdk::program_error::ProgramError;
+use solana_account_info::AccountInfo;
+use solana_program::program::invoke_signed;
+use solana_program::program_error::ProgramError;
 use spl_token::instruction as token_instruction;
 
 pub fn invoke_token_transfer<'a, 'b>(
@@ -18,7 +19,7 @@ pub fn invoke_token_transfer<'a, 'b>(
         &[],
         amount,
     )?;
-    solana_sdk::program::invoke_signed(
+    invoke_signed(
         &ix,
         &[
             from_acc_info.clone(),
@@ -40,7 +41,7 @@ pub fn invoke_mint_tokens<'a, 'b>(
 ) -> Result<(), ProgramError> {
     let ix =
         token_instruction::mint_to(&spl_token::ID, mint.key, to.key, authority.key, &[], amount)?;
-    solana_sdk::program::invoke_signed(
+    invoke_signed(
         &ix,
         &[
             mint.clone(),
@@ -68,7 +69,7 @@ pub fn invoke_burn_tokens<'a, 'b>(
         &[],
         amount,
     )?;
-    solana_sdk::program::invoke_signed(
+    invoke_signed(
         &ix,
         &[
             token.clone(),

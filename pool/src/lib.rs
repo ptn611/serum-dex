@@ -8,9 +8,10 @@ use solana_program::account_info::next_account_info;
 use solana_program::program_option::COption;
 use solana_program::program_pack::Pack;
 use solana_program::{
-    account_info::AccountInfo, ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo, msg, program_error::ProgramError,
     pubkey::Pubkey,
 };
+use solana_program_error::ProgramResult;
 use spl_token::state::Account as TokenAccount;
 
 pub use serum_pool_schema as schema;
@@ -35,7 +36,7 @@ macro_rules! declare_pool_entrypoint {
             program_id: &$crate::solana_program::pubkey::Pubkey,
             accounts: &[$crate::solana_program::account_info::AccountInfo],
             instruction_data: &[u8],
-        ) -> solana_program::ProgramResult {
+        ) -> solana_program::entrypoint::ProgramResult {
             $crate::pool_entrypoint::<$PoolImpl>(program_id, accounts, instruction_data)
         }
     };

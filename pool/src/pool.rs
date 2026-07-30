@@ -1,7 +1,8 @@
 use solana_program::{
-    account_info::AccountInfo, ProgramResult, program_error::ProgramError,
+    account_info::AccountInfo, program_error::ProgramError,
     pubkey::Pubkey,
 };
+use solana_program_error::ProgramResult;
 
 use serum_pool_schema::{Basket, PoolState};
 

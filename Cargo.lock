@@ -4435,9 +4435,12 @@ dependencies = [
  "serde",
  "serde_json",
  "serum-borsh",
+ "solana-account-info",
  "solana-client",
+ "solana-commitment-config",
  "solana-program 3.0.0",
  "solana-sdk 3.0.0",
+ "solana-system-interface 3.3.0",
  "spl-token 2.0.8",
 ]
 
@@ -4464,7 +4467,9 @@ dependencies = [
  "serum-pool-schema",
  "slice-of-array",
  "solana-program 3.0.0",
- "spl-token 3.2.0",
+ "solana-program-error",
+ "solana-sysvar",
+ "spl-token 9.0.0",
  "thiserror 1.0.69",
  "zerocopy 0.3.2",
 ]

@@ -10,8 +10,9 @@ use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::program;
 use solana_program::program_option::COption;
 use solana_program::program_pack::Pack;
-use solana_program::sysvar::{Sysvar, rent};
+use solana_program::sysvar::rent;
 use solana_program::{account_info::AccountInfo, msg, program_error::ProgramError, pubkey::Pubkey};
+use solana_sysvar::SysvarSerialize;
 use spl_token::state::{Account as TokenAccount, Mint};
 use std::cmp::{max, min};
 
@@ -158,7 +159,7 @@ impl<'a, 'b> PoolContext<'a, 'b> {
                     msg!("Incorrect rent sysvar account");
                     return Err(ProgramError::InvalidArgument);
                 }
-                let rent = rent::Rent::from_account_info(rent_sysvar_account).map_err(|_| {
+                let rent = solana_program::sysvar::rent::Rent::from_account_info(rent_sysvar_account).map_err(|_| {
                     msg!("Failed to deserialize rent sysvar");
                     ProgramError::InvalidArgument
                 })?;
@@ -328,7 +329,7 @@ impl<'a, 'b> PoolContext<'a, 'b> {
     }
 
     pub fn check_rent_exemption(&self, account: &AccountInfo) -> Result<(), ProgramError> {
-        let rent = self.rent.ok_or_else(|| {
+        let rent = self.rent.as_ref().ok_or_else(|| {
             msg!("Rent parameters not present");
             ProgramError::InvalidArgument
         })?;

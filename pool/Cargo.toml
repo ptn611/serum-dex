@@ -12,7 +12,9 @@ default = []
 serum-pool-schema = { version = "0.1.0", path = "./schema" }
 arrayref = "0.3.6"
 solana-program = "3"
-spl-token = { version = "3.0.0", features = ["no-entrypoint"] }
+solana-program-error = "3"
+solana-sysvar = "3"
+spl-token = { version = "9", features = ["no-entrypoint"] }
 thiserror = "1.0.20"
 zerocopy = "0.3.0"
 bytemuck = "1.4.1"

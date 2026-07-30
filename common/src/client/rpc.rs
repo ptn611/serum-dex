@@ -1,17 +1,17 @@
-use anyhow::{anyhow, Result};
-use rand::rngs::OsRng;
+use anyhow::{Result, anyhow};
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSendTransactionConfig;
 use solana_client::rpc_request::RpcRequest;
 use solana_client::rpc_response::{RpcResult, RpcSimulateTransactionResult};
-use solana_sdk::commitment_config::CommitmentConfig;
+use solana_commitment_config::CommitmentConfig;
 use solana_sdk::instruction::Instruction;
-use solana_sdk::program_pack::Pack as TokenPack;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signature, Signer};
+use solana_sdk::signature::{Keypair, Signature};
+use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
+use solana_system_interface::instruction as system_instruction;
 use spl_token::instruction::{self as token_instruction};
-use std::convert::Into;
+use spl_token::solana_sdk::program_pack::Pack as TokenPack;
 
 pub fn create_account_rent_exempt(
     client: &RpcClient,
@@ -19,13 +19,13 @@ pub fn create_account_rent_exempt(
     data_size: usize,
     owner: &Pubkey,
 ) -> Result<Keypair> {
-    let account = Keypair::generate(&mut OsRng);
+    let account = Keypair::new();
 
     let signers = [payer, &account];
 
     let lamports = client.get_minimum_balance_for_rent_exemption(data_size)?;
 
-    let create_account_instr = solana_sdk::system_instruction::create_account(
+    let create_account_instr = system_instruction::create_account(
         &payer.pubkey(),
         &account.pubkey(),
         lamports,
@@ -54,7 +54,7 @@ pub fn create_token_account(
     owner_pubkey: &Pubkey,
     payer: &Keypair,
 ) -> Result<Keypair> {
-    let spl_account = Keypair::generate(&mut OsRng);
+    let spl_account = Keypair::new();
     let instructions = create_token_account_instructions(
         client,
         spl_account.pubkey(),
@@ -85,7 +85,7 @@ pub fn create_token_account_instructions(
 ) -> Result<Vec<Instruction>> {
     let lamports = client.get_minimum_balance_for_rent_exemption(spl_token::state::Account::LEN)?;
 
-    let create_account_instr = solana_sdk::system_instruction::create_account(
+    let create_account_instr = system_instruction::create_account(
         &payer.pubkey(),
         &spl_account,
         lamports,
@@ -111,7 +111,7 @@ pub fn new_mint(
     owner_pubkey: &Pubkey,
     decimals: u8,
 ) -> Result<(Keypair, Signature)> {
-    let mint = Keypair::generate(&mut OsRng);
+    let mint = Keypair::new();
     let s = create_and_init_mint(client, payer_keypair, &mint, owner_pubkey, decimals)?;
     Ok((mint, s))
 }
@@ -127,7 +127,7 @@ pub fn create_and_init_mint(
 
     let lamports = client.get_minimum_balance_for_rent_exemption(spl_token::state::Mint::LEN)?;
 
-    let create_mint_account_instruction = solana_sdk::system_instruction::create_account(
+    let create_mint_account_instruction = system_instruction::create_account(
         &payer_keypair.pubkey(),
         &mint_keypair.pubkey(),
         lamports,
@@ -161,13 +161,13 @@ pub fn mint_to_new_account(
     mint: &Pubkey,
     quantity: u64,
 ) -> Result<Keypair> {
-    let recip_keypair = Keypair::generate(&mut OsRng);
+    let recip_keypair = Keypair::new();
 
     let lamports = client.get_minimum_balance_for_rent_exemption(spl_token::state::Account::LEN)?;
 
     let signers = vec![payer, minting_key, &recip_keypair];
 
-    let create_recip_instr = solana_sdk::system_instruction::create_account(
+    let create_recip_instr = system_instruction::create_account(
         &payer.pubkey(),
         &recip_keypair.pubkey(),
         lamports,

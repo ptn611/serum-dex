@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::account_info::{next_account_info, AccountInfo};
+use solana_program::account_info::{AccountInfo, next_account_info};
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program::invoke_signed;
 use solana_program::program_pack::{IsInitialized, Pack};
@@ -10,9 +10,9 @@ use solana_program::{msg, program_error::ProgramError};
 use spl_token::state::Account as TokenAccount;
 
 use serum_pool::schema::{
-    declare_tag, AssetInfo, Basket, PoolState, FEE_RATE_DENOMINATOR, MIN_FEE_RATE,
+    AssetInfo, Basket, FEE_RATE_DENOMINATOR, MIN_FEE_RATE, PoolState, declare_tag,
 };
-use serum_pool::{declare_pool_entrypoint, Pool, PoolContext};
+use serum_pool::{Pool, PoolContext, declare_pool_entrypoint};
 
 declare_tag!(AdminInstructionTag, u64, 0x31e6452361a17878);
 
