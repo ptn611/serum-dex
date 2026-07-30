@@ -12,7 +12,7 @@ default = []
 [dependencies]
 solana-program = "3"
 serum-pool = { version = "0.1.0", path = "../.." }
-spl-token = { version = "3.0.0", features = ["no-entrypoint"] }
+spl-token = { version = "9", features = ["no-entrypoint"] }
 serum-borsh = "0.8.1-serum.1"
 
 [lib]

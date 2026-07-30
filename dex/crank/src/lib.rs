@@ -11,49 +11,48 @@ use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 use std::{thread, time};
 
-use anyhow::{format_err, Result};
+use anyhow::{Result, format_err};
 use clap::Parser;
 use debug_print::debug_println;
 use enumflags2::BitFlags;
 use log::{error, info};
-use rand::rngs::OsRng;
 use safe_transmute::{
     guard::SingleManyGuard,
     to_bytes::{transmute_one_to_bytes, transmute_to_bytes},
     transmute_many, transmute_many_pedantic, transmute_one_pedantic,
 };
+use sloggers::Build;
 use sloggers::file::FileLoggerBuilder;
 use sloggers::types::Severity;
-use sloggers::Build;
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSendTransactionConfig;
-use solana_sdk::commitment_config::CommitmentConfig;
+use solana_commitment_config::CommitmentConfig;
 use solana_sdk::instruction::{AccountMeta, Instruction};
-use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::transaction::Transaction;
 use spl_token::instruction as token_instruction;
+use spl_token::solana_program::program_pack::Pack;
 use warp::Filter;
 
+use serum_common::client::Cluster;
 use serum_common::client::rpc::{
     create_and_init_mint, create_token_account, mint_to_new_account, send_txn, simulate_transaction,
 };
-use serum_common::client::Cluster;
 use serum_dex::instruction::{
+    MarketInstruction, NewOrderInstructionV3, SelfTradeBehavior,
     cancel_order_by_client_order_id as cancel_order_by_client_order_id_ix,
     cancel_orders_by_client_order_ids as cancel_orders_by_client_order_ids_ix,
     close_open_orders as close_open_orders_ix, init_open_orders as init_open_orders_ix,
-    MarketInstruction, NewOrderInstructionV3, SelfTradeBehavior,
 };
 use serum_dex::matching::{OrderType, Side};
-use serum_dex::state::gen_vault_signer_key;
 use serum_dex::state::Event;
 use serum_dex::state::EventQueueHeader;
 use serum_dex::state::QueueHeader;
 use serum_dex::state::Request;
 use serum_dex::state::RequestQueueHeader;
+use serum_dex::state::gen_vault_signer_key;
 use serum_dex::state::{AccountFlag, Market, MarketState, MarketStateV2};
 
 pub fn with_logging<F: FnOnce()>(_to: &str, fnc: F) {
@@ -449,24 +448,24 @@ fn get_keys_for_market<'a>(
     );
     Ok(MarketPubkeys {
         market: Box::new(*market),
-        req_q: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.req_q,
-        )))),
-        event_q: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.event_q,
-        )))),
-        bids: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.bids,
-        )))),
-        asks: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.asks,
-        )))),
-        coin_vault: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.coin_vault,
-        )))),
-        pc_vault: Box::new(Pubkey::new(transmute_one_to_bytes(&identity(
-            market_state.pc_vault,
-        )))),
+        req_q: Box::new(
+            Pubkey::try_from(transmute_one_to_bytes(&identity(market_state.req_q))).unwrap(),
+        ),
+        event_q: Box::new(
+            Pubkey::try_from(transmute_one_to_bytes(&identity(market_state.event_q))).unwrap(),
+        ),
+        bids: Box::new(
+            Pubkey::try_from(transmute_one_to_bytes(&identity(market_state.bids))).unwrap(),
+        ),
+        asks: Box::new(
+            Pubkey::try_from(transmute_one_to_bytes(&identity(market_state.asks))).unwrap(),
+        ),
+        coin_vault: Box::new(
+            Pubkey::try_from(transmute_one_to_bytes(&identity(market_state.coin_vault))).unwrap(),
+        ),
+        pc_vault: Box::new(
+            Pubkey::try_from(transmute_one_to_bytes(&identity(market_state.pc_vault))).unwrap(),
+        ),
         vault_signer_key: Box::new(vault_signer_key),
     })
 }
@@ -540,8 +539,8 @@ fn consume_events_loop(
 
         let loop_start = std::time::Instant::now();
         let start_time = std::time::Instant::now();
-        let event_q_value_and_context =
-            client.get_account_with_commitment(&market_keys.event_q, CommitmentConfig::recent())?;
+        let event_q_value_and_context = client
+            .get_account_with_commitment(&market_keys.event_q, CommitmentConfig::processed())?;
         let event_q_slot = event_q_value_and_context.context.slot;
         let max_slot_height = max_slot_height_mutex.lock().unwrap();
         if event_q_slot <= *max_slot_height {
@@ -557,7 +556,7 @@ fn consume_events_loop(
             .ok_or(format_err!("Failed to retrieve account"))?
             .data;
         let req_q_data = client
-            .get_account_with_commitment(&market_keys.req_q, CommitmentConfig::recent())?
+            .get_account_with_commitment(&market_keys.req_q, CommitmentConfig::processed())?
             .value
             .ok_or(format_err!("Failed to retrieve account"))?
             .data;
@@ -618,7 +617,7 @@ fn consume_events_loop(
 
             let mut account_metas = Vec::with_capacity(orders_accounts.len() + 4);
             for pubkey_words in orders_accounts {
-                let pubkey = Pubkey::new(transmute_to_bytes(&pubkey_words));
+                let pubkey = Pubkey::try_from(transmute_to_bytes(&pubkey_words)).unwrap();
                 account_metas.push(AccountMeta::new(pubkey, false));
             }
             for pubkey in [
@@ -723,7 +722,7 @@ pub fn consume_events_once(
         accounts: account_metas,
         data: instruction_data,
     };
-    let random_instruction = solana_sdk::system_instruction::transfer(
+    let random_instruction = solana_system_interface::instruction::transfer(
         &payer.pubkey(),
         &payer.pubkey(),
         rand::random::<u64>() % 10000 + 1,
@@ -803,7 +802,7 @@ pub fn consume_events_instruction(
 
     let mut account_metas = Vec::with_capacity(orders_accounts.len() + 4);
     for pubkey_words in orders_accounts {
-        let pubkey = Pubkey::new(transmute_to_bytes(&pubkey_words));
+        let pubkey = Pubkey::try_from(transmute_to_bytes(&pubkey_words)).unwrap();
         account_metas.push(AccountMeta::new(pubkey, false));
     }
     for pubkey in [&state.market, &state.event_q, coin_wallet, pc_wallet].iter() {
@@ -823,11 +822,11 @@ pub fn consume_events_instruction(
 }
 
 fn whole_shebang(client: &RpcClient, program_id: &Pubkey, payer: &Keypair) -> Result<()> {
-    let coin_mint = Keypair::generate(&mut OsRng);
+    let coin_mint = Keypair::new();
     debug_println!("Coin mint: {}", coin_mint.pubkey());
     create_and_init_mint(client, payer, &coin_mint, &payer.pubkey(), 3)?;
 
-    let pc_mint = Keypair::generate(&mut OsRng);
+    let pc_mint = Keypair::new();
     debug_println!("Pc mint: {}", pc_mint.pubkey());
     create_and_init_mint(client, payer, &pc_mint, &payer.pubkey(), 3)?;
 
@@ -1241,7 +1240,7 @@ fn settle_funds(
         i += 1;
         assert!(i < 10);
         debug_println!("Simulating SettleFunds instruction ...");
-        let result = simulate_transaction(client, &txn, true, CommitmentConfig::single())?;
+        let result = simulate_transaction(client, &txn, true, CommitmentConfig::processed())?;
         if let Some(e) = result.value.err {
             return Err(format_err!("simulate_transaction error: {:?}", e));
         }
@@ -1329,7 +1328,7 @@ pub fn list_market(
     );
 
     debug_println!("txn:\n{:#x?}", txn);
-    let result = simulate_transaction(client, &txn, true, CommitmentConfig::single())?;
+    let result = simulate_transaction(client, &txn, true, CommitmentConfig::processed())?;
     if let Some(e) = result.value.err {
         return Err(format_err!("simulate_transaction error: {:?}", e));
     }
@@ -1407,8 +1406,8 @@ fn create_dex_account(
     unpadded_len: usize,
 ) -> Result<(Keypair, Instruction)> {
     let len = unpadded_len + 12;
-    let key = Keypair::generate(&mut OsRng);
-    let create_account_instr = solana_sdk::system_instruction::create_account(
+    let key = Keypair::new();
+    let create_account_instr = solana_system_interface::instruction::create_account(
         payer,
         &key.pubkey(),
         client.get_minimum_balance_for_rent_exemption(len)?,
@@ -1451,7 +1450,7 @@ pub fn match_orders(
     );
 
     debug_println!("Simulating order matching ...");
-    let result = simulate_transaction(&client, &txn, true, CommitmentConfig::single())?;
+    let result = simulate_transaction(&client, &txn, true, CommitmentConfig::processed())?;
     if let Some(e) = result.value.err {
         return Err(format_err!("simulate_transaction error: {:?}", e));
     }
@@ -1469,12 +1468,12 @@ fn create_account(
     owner_pubkey: &Pubkey,
     payer: &Keypair,
 ) -> Result<Keypair> {
-    let spl_account = Keypair::generate(&mut OsRng);
+    let spl_account = Keypair::new();
     let signers = vec![payer, &spl_account];
 
     let lamports = client.get_minimum_balance_for_rent_exemption(spl_token::state::Account::LEN)?;
 
-    let create_account_instr = solana_sdk::system_instruction::create_account(
+    let create_account_instr = solana_system_interface::instruction::create_account(
         &payer.pubkey(),
         &spl_account.pubkey(),
         lamports,
@@ -1537,9 +1536,9 @@ fn mint_to_existing_account(
 }
 
 fn initialize_token_account(client: &RpcClient, mint: &Pubkey, owner: &Keypair) -> Result<Keypair> {
-    let recip_keypair = Keypair::generate(&mut OsRng);
+    let recip_keypair = Keypair::new();
     let lamports = client.get_minimum_balance_for_rent_exemption(spl_token::state::Account::LEN)?;
-    let create_recip_instr = solana_sdk::system_instruction::create_account(
+    let create_recip_instr = solana_system_interface::instruction::create_account(
         &owner.pubkey(),
         &recip_keypair.pubkey(),
         lamports,
@@ -1581,7 +1580,7 @@ async fn read_queue_length_loop(
         let client = client.clone();
         let market_keys = get_keys_for_market(&client, &program_id, &market).unwrap();
         let event_q_data = client
-            .get_account_with_commitment(&market_keys.event_q, CommitmentConfig::recent())
+            .get_account_with_commitment(&market_keys.event_q, CommitmentConfig::processed())
             .unwrap()
             .value
             .expect("Failed to retrieve account")

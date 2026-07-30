@@ -3,7 +3,7 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-entrypoint_deprecated!(entry);
+solana_program::entrypoint_deprecated!(entry);
 fn entry(_program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult {
     let account = accounts.get(0).ok_or(ProgramError::NotEnoughAccountKeys)?;
     if instruction_data.len() != 32 {

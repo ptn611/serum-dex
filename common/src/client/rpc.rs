@@ -11,7 +11,7 @@ use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
 use solana_system_interface::instruction as system_instruction;
 use spl_token::instruction::{self as token_instruction};
-use spl_token::solana_sdk::program_pack::Pack as TokenPack;
+use spl_token::solana_program::program_pack::Pack as TokenPack;
 
 pub fn create_account_rent_exempt(
     client: &RpcClient,
