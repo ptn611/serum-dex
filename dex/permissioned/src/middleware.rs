@@ -3,12 +3,10 @@ use anchor_lang::Accounts;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::solana_program::system_program;
-use std::str::FromStr;
 use anchor_spl::token;
 use serum_dex::instruction::*;
 use serum_dex::matching::Side;
 use serum_dex::state::OpenOrders;
-use std::collections::BTreeSet;
 use std::mem::size_of;
 
 /// Per request context. Can be used to share data between middleware handlers.
@@ -229,9 +227,21 @@ impl MarketMiddleware for OpenOrdersPda {
                 program_id: anchor_lang::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
                 data,
                 accounts: vec![
-                    AccountMeta { pubkey: *token_account_payer.key, is_signer: false, is_writable: true },
-                    AccountMeta { pubkey: *open_orders.key, is_signer: false, is_writable: false },
-                    AccountMeta { pubkey: *user.key, is_signer: true, is_writable: false },
+                    AccountMeta {
+                        pubkey: *token_account_payer.key,
+                        is_signer: false,
+                        is_writable: true,
+                    },
+                    AccountMeta {
+                        pubkey: *open_orders.key,
+                        is_signer: false,
+                        is_writable: false,
+                    },
+                    AccountMeta {
+                        pubkey: *user.key,
+                        is_signer: true,
+                        is_writable: false,
+                    },
                 ],
             };
             let accounts = vec![
@@ -250,8 +260,16 @@ impl MarketMiddleware for OpenOrdersPda {
                 program_id: anchor_lang::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
                 data,
                 accounts: vec![
-                    AccountMeta { pubkey: *token_account_payer.key, is_signer: false, is_writable: true },
-                    AccountMeta { pubkey: *user.key, is_signer: true, is_writable: false },
+                    AccountMeta {
+                        pubkey: *token_account_payer.key,
+                        is_signer: false,
+                        is_writable: true,
+                    },
+                    AccountMeta {
+                        pubkey: *user.key,
+                        is_signer: true,
+                        is_writable: false,
+                    },
                 ],
             };
             let accounts = vec![token_account_payer.clone(), user.clone()];
@@ -546,9 +564,9 @@ pub enum ErrorCode {
 #[instruction(bump: u8, bump_init: u8)]
 pub struct InitAccount<'info> {
     #[account(address = DEX_ID)]
-    pub dex_program: AccountInfo<'info>,
+    pub dex_program: UncheckedAccount<'info>,
     #[account(address = system_program::ID)]
-    pub system_program: AccountInfo<'info>,
+    pub system_program: UncheckedAccount<'info>,
     #[account(
         init,
         seeds = [b"open-orders", dex_program.key.as_ref(), market.key.as_ref(), authority.key.as_ref()],
@@ -557,23 +575,22 @@ pub struct InitAccount<'info> {
         owner = DEX_ID,
         space = size_of::<OpenOrders>() + SERUM_PADDING,
     )]
-    pub open_orders: AccountInfo<'info>,
+    pub open_orders: UncheckedAccount<'info>,
     #[account(mut, signer)]
-    pub authority: AccountInfo<'info>,
-    pub market: AccountInfo<'info>,
+    pub authority: UncheckedAccount<'info>,
+    pub market: UncheckedAccount<'info>,
     pub rent: Sysvar<'info, Rent>,
     #[account(
         seeds = [b"open-orders-init", dex_program.key.as_ref(), market.key.as_ref()],
         bump = bump_init,
     )]
-    pub open_orders_init_authority: AccountInfo<'info>,
+    pub open_orders_init_authority: UncheckedAccount<'info>,
 }
 
 // Constants.
 
 // The Serum DEX v3 program ID.
 pub const DEX_ID: Pubkey = anchor_lang::pubkey!("srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX");
-
 
 // Padding added to every serum account.
 //

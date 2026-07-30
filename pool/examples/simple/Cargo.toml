@@ -16,3 +16,6 @@ serum-pool = { version = "0.1.0", path = "../.." }
 [lib]
 name = "serum_pool_examples_simple"
 crate-type = ["cdylib", "lib"]
+
+[lints]
+workspace = true

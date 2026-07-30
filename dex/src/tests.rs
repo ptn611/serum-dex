@@ -12,7 +12,7 @@ use anchor_lang::solana_program::pubkey::Pubkey;
 use anchor_lang::solana_program::rent::Rent;
 use anchor_lang::solana_program::system_program;
 use anchor_lang::solana_program::rent;
-use solana_sysvar::{Sysvar, SysvarSerialize};
+use solana_sysvar::SysvarSerialize;
 use spl_token::state::{Account, AccountState, Mint};
 
 use instruction::{initialize_market, MarketInstruction, NewOrderInstructionV3, SelfTradeBehavior};
@@ -21,7 +21,6 @@ use state::gen_vault_signer_key;
 use state::{Market, MarketState, OpenOrders, State, ToAlignedBytes};
 
 use crate::error::DexErrorCode;
-use crate::state::account_parser::CancelOrderByClientIdV2Args;
 
 use super::*;
 
@@ -263,8 +262,7 @@ fn test_new_order() {
         new_dex_owned_account(&mut rng, size_of::<OpenOrders>(), dex_program_id, &bump);
     let orders_account_seller =
         new_dex_owned_account(&mut rng, size_of::<OpenOrders>(), dex_program_id, &bump);
-    let coin_account =
-        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
+    let _coin_account =        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
     let pc_account = new_token_account(&mut rng, accounts.pc_mint.key, owner.key, 1_000_000, &bump);
     let spl_token_program = new_spl_token_program(&bump);
 
@@ -317,7 +315,7 @@ fn test_new_order() {
         accounts.event_q.clone(),
         accounts.bids.clone(),
         accounts.asks.clone(),
-        coin_account.clone(),
+        _coin_account.clone(),
         owner.clone(),
         accounts.coin_vault.clone(),
         accounts.pc_vault.clone(),
@@ -368,7 +366,7 @@ fn test_new_order() {
             orders_account_seller.clone(),
             accounts.market.clone(),
             accounts.event_q.clone(),
-            coin_account.clone(),
+        _coin_account.clone(),
             pc_account.clone(),
         ]
         .into_bump_slice_mut();
@@ -418,8 +416,7 @@ fn test_cancel_orders() {
     let owner = new_sol_account(&mut rng, 1_000_000_000, &bump);
     let orders_account =
         new_dex_owned_account(&mut rng, size_of::<OpenOrders>(), dex_program_id, &bump);
-    let coin_account =
-        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
+    let _coin_account =        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
     let pc_account = new_token_account(&mut rng, accounts.pc_mint.key, owner.key, 1_000_000, &bump);
     let spl_token_program = new_spl_token_program(&bump);
 
@@ -513,8 +510,7 @@ fn test_max_ts_order() {
     let owner = new_sol_account(&mut rng, 1_000_000_000, &bump);
     let orders_account =
         new_dex_owned_account(&mut rng, size_of::<OpenOrders>(), dex_program_id, &bump);
-    let coin_account =
-        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
+    let _coin_account =        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
     let pc_account = new_token_account(&mut rng, accounts.pc_mint.key, owner.key, 1_000_000, &bump);
     let spl_token_program = new_spl_token_program(&bump);
 
@@ -601,8 +597,7 @@ fn test_replace_orders() {
     let owner = new_sol_account(&mut rng, 1_000_000_000, &bump);
     let orders_account =
         new_dex_owned_account(&mut rng, size_of::<OpenOrders>(), dex_program_id, &bump);
-    let coin_account =
-        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
+    let _coin_account =        new_token_account(&mut rng, accounts.coin_mint.key, owner.key, 10_000, &bump);
     let pc_account = new_token_account(&mut rng, accounts.pc_mint.key, owner.key, 1_000_000, &bump);
     let spl_token_program = new_spl_token_program(&bump);
 

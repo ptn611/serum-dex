@@ -1,13 +1,11 @@
-use borsh::schema::{BorshSchema, BorshSchemaContainer};
+use borsh::schema::BorshSchema;
 use borsh::BorshSerialize;
 
-use schema::PoolRequest;
-use schema::PoolState;
-
-mod schema;
+use serum_pool_schema::PoolRequest;
+use serum_pool_schema::PoolState;
 
 fn main() -> std::io::Result<()> {
-    let mut schema: BorshSchemaContainer = PoolState::schema_container();
+    let mut schema: borsh::schema::BorshSchemaContainer = PoolState::schema_container();
     PoolRequest::add_definitions_recursively(&mut schema.definitions);
     schema.serialize(&mut std::io::stdout())
 }

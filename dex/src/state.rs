@@ -19,7 +19,12 @@ use anchor_lang::solana_program::{
     account_info::AccountInfo, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
     rent::Rent,
 };
-use solana_sysvar::{Sysvar, SysvarSerialize};
+#[cfg(not(any(test, feature = "fuzz")))]
+use anchor_lang::solana_program::clock::Clock;
+#[cfg(not(any(test, feature = "fuzz")))]
+use solana_sysvar::Sysvar;
+#[cfg(any(test, feature = "fuzz"))]
+use solana_sysvar::SysvarSerialize;
 use spl_token::error::TokenError;
 
 use crate::{
@@ -1634,6 +1639,7 @@ pub(crate) mod account_parser {
                 unchecked_rent,
                 remaining_accounts,
             ) = array_refs![accounts, 5, 2, 2, 1; .. ;];
+            let _unchecked_rent = unchecked_rent; // suppress unused warning when not test/fuzz
 
             let mut rem_iter = remaining_accounts.iter();
             let market_authority = rem_iter.next();
@@ -1861,7 +1867,7 @@ pub(crate) mod account_parser {
                 ref coin_vault_acc,
                 ref pc_vault_acc,
                 ref spl_token_program_acc,
-                ref rent_sysvar_acc,
+                ref _rent_sysvar_acc,
             ]: &'a [AccountInfo<'b>; MIN_ACCOUNTS] = fixed_accounts;
             let srm_or_msrm_account = match fee_discount_account {
                 &[] => None,
@@ -1873,7 +1879,7 @@ pub(crate) mod account_parser {
 
             // Dynamic sysvars don't work in unit tests.
             #[cfg(any(test, feature = "fuzz"))]
-            let rent = Rent::from_account_info(rent_sysvar_acc)?;
+            let rent = Rent::from_account_info(_rent_sysvar_acc)?;
             #[cfg(not(any(test, feature = "fuzz")))]
             let rent = Rent::get()?;
 
@@ -2442,7 +2448,7 @@ pub(crate) mod account_parser {
                 ref open_orders_acc,
                 ref owner_acc,
                 ref market_acc,
-                ref rent_acc,
+                ref _rent_acc,
             ] = array_ref![accounts, 0, 4];
 
             let oo_authority = (&accounts[4..])
@@ -2452,7 +2458,7 @@ pub(crate) mod account_parser {
 
             // Dynamic sysvars don't work in unit tests.
             #[cfg(any(test, feature = "fuzz"))]
-            let rent = Rent::from_account_info(rent_acc)?;
+            let rent = Rent::from_account_info(_rent_acc)?;
             #[cfg(not(any(test, feature = "fuzz")))]
             let rent = Rent::get()?;
 
@@ -3197,8 +3203,6 @@ impl State {
         // which would cause an error (as there would be two borrows while
         // one of them is mutable).
 
-        use anchor_lang::solana_program::clock::Clock;
-
         drop(open_orders);
 
         if deposit_amount != 0 {
@@ -3237,6 +3241,7 @@ impl State {
         Ok(())
     }
 
+    #[cfg(feature = "program")]
     fn process_replace_orders_by_client_ids(
         args: account_parser::ReplaceOrdersByClientIdsArgs,
     ) -> DexResult {

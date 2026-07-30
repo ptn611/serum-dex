@@ -12,3 +12,6 @@ members = [
 exclude = [
     "dex",
 ]
+
+[workspace.lints.rust]
+unexpected_cfgs = "allow"

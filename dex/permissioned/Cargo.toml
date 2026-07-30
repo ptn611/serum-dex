@@ -8,3 +8,6 @@ anchor-lang = "1.1"
 anchor-spl = "1.1"
 serum_dex = { path = "../", features = ["no-entrypoint"] }
 spl-token = { version = "9", features = ["no-entrypoint"] }
+
+[lints]
+workspace = true

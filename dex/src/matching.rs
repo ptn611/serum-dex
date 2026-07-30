@@ -1,6 +1,5 @@
 use std::num::NonZeroU64;
 
-use crate::instruction::SelfTradeBehavior;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(test)]
 use proptest_derive::Arbitrary;
@@ -8,15 +7,13 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "program")]
 use anchor_lang::solana_program::msg;
 
-use crate::critbit::SlabTreeError;
 use crate::error::{DexErrorCode, DexResult, SourceFileId};
-use crate::{
-    critbit::{LeafNode, NodeHandle, Slab, SlabView},
-    fees::{self, FeeTier},
-    state::{Event, EventQueue, EventView, MarketState, OpenOrders, RequestView},
-};
+use crate::{critbit::{LeafNode, Slab}, state::{Event, EventQueue, EventView, MarketState, OpenOrders}};
+#[cfg(feature = "program")]
+use crate::{critbit::{NodeHandle, SlabView, SlabTreeError}, fees::{self, FeeTier}, instruction::SelfTradeBehavior, state::RequestView};
 
 #[cfg(not(feature = "program"))]
+#[allow(unused_macros)]
 macro_rules! msg {
     ($($i:expr),*) => { { ($($i),*) } };
 }
@@ -45,6 +42,7 @@ pub enum OrderType {
     PostOnly = 2,
 }
 
+#[cfg(feature = "program")]
 fn extract_price_from_order_id(order_id: u128) -> u64 {
     (order_id >> 64) as u64
 }
@@ -64,6 +62,7 @@ impl<'ob> OrderBookState<'ob> {
         }
     }
 
+    #[cfg(feature = "program")]
     fn find_bbo(&self, side: Side) -> Option<NodeHandle> {
         match side {
             Side::Bid => self.bids.find_max(),
@@ -71,6 +70,7 @@ impl<'ob> OrderBookState<'ob> {
         }
     }
 
+    #[cfg(feature = "program")]
     pub(crate) fn process_orderbook_request(
         &mut self,
         request: &RequestView,
@@ -187,6 +187,7 @@ macro_rules! impl_incr_method {
 }
 
 impl RequestProceeds {
+    #[cfg(feature = "program")]
     pub(crate) fn zero() -> Self {
         Self {
             coin_unlocked: 0,
@@ -205,6 +206,7 @@ impl RequestProceeds {
     impl_incr_method!(debit_native_pc, native_pc_debit);
 }
 
+#[cfg(feature = "program")]
 pub(crate) struct NewOrderParams {
     side: Side,
     order_type: OrderType,
@@ -218,12 +220,14 @@ pub(crate) struct NewOrderParams {
     self_trade_behavior: SelfTradeBehavior,
 }
 
+#[cfg(feature = "program")]
 struct OrderRemaining {
     coin_qty_remaining: NonZeroU64,
     native_pc_qty_remaining: Option<NonZeroU64>,
 }
 
 impl<'ob> OrderBookState<'ob> {
+    #[cfg(feature = "program")]
     fn new_order(
         &mut self,
         params: NewOrderParams,
@@ -309,6 +313,7 @@ impl<'ob> OrderBookState<'ob> {
     }
 }
 
+#[cfg(feature = "program")]
 struct NewAskParams {
     max_qty: NonZeroU64,
     limit_price: NonZeroU64,
@@ -323,6 +328,7 @@ struct NewAskParams {
 }
 
 impl<'ob> OrderBookState<'ob> {
+    #[cfg(feature = "program")]
     fn new_ask(
         &mut self,
         params: NewAskParams,
@@ -593,6 +599,7 @@ impl<'ob> OrderBookState<'ob> {
     }
 }
 
+#[cfg(feature = "program")]
 struct NewBidParams {
     max_coin_qty: NonZeroU64,
     native_pc_qty_locked: NonZeroU64,
@@ -608,6 +615,7 @@ struct NewBidParams {
 }
 
 impl<'ob> OrderBookState<'ob> {
+    #[cfg(feature = "program")]
     fn new_bid(
         &mut self,
         params: NewBidParams,
@@ -992,6 +1000,7 @@ impl<'ob> OrderBookState<'ob> {
         Ok(())
     }
 
+    #[cfg(feature = "program")]
     fn cancel_order(
         &mut self,
         side: Side,

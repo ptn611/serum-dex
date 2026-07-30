@@ -18,3 +18,6 @@ serum-borsh = "0.8.1-serum.1"
 [lib]
 name = "serum_pool_examples_admin_controlled"
 crate-type = ["cdylib", "lib"]
+
+[lints]
+workspace = true

@@ -1,6 +1,3 @@
-#![deny(unaligned_references)]
-#![allow(dead_code)]
-
 use std::borrow::Cow;
 use std::cmp::{max, min};
 use std::collections::BTreeSet;
@@ -14,7 +11,6 @@ use std::{thread, time};
 use anyhow::{Result, format_err};
 use clap::Parser;
 use debug_print::debug_println;
-use enumflags2::BitFlags;
 use log::{error, info};
 use safe_transmute::{
     guard::SingleManyGuard,
@@ -32,7 +28,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::transaction::Transaction;
-use spl_token::instruction as token_instruction;
+use spl_token_interface::instruction as token_instruction;
 use spl_token::solana_program::program_pack::Pack;
 use warp::Filter;
 
@@ -50,8 +46,6 @@ use serum_dex::matching::{OrderType, Side};
 use serum_dex::state::Event;
 use serum_dex::state::EventQueueHeader;
 use serum_dex::state::QueueHeader;
-use serum_dex::state::Request;
-use serum_dex::state::RequestQueueHeader;
 use serum_dex::state::gen_vault_signer_key;
 use serum_dex::state::{AccountFlag, Market, MarketState, MarketStateV2};
 
@@ -482,19 +476,6 @@ fn parse_event_queue(data_words: &[u64]) -> Result<(EventQueueHeader, &[Event], 
     Ok((header, &head_seg[..head_len], &tail_seg[..tail_len]))
 }
 
-fn parse_req_queue(data_words: &[u64]) -> Result<(RequestQueueHeader, &[Request], &[Request])> {
-    let (header_words, request_words) = data_words.split_at(size_of::<RequestQueueHeader>() >> 3);
-    let header: RequestQueueHeader =
-        transmute_one_pedantic(transmute_to_bytes(header_words)).map_err(|e| e.without_src())?;
-    let request: &[Request] =
-        transmute_many::<_, SingleManyGuard>(transmute_to_bytes(request_words))
-            .map_err(|e| e.without_src())?;
-    let (tail_seg, head_seg) = request.split_at(header.head() as usize);
-    let head_len = head_seg.len().min(header.count() as usize);
-    let tail_len = header.count() as usize - head_len;
-    Ok((header, &head_seg[..head_len], &tail_seg[..tail_len]))
-}
-
 fn hash_accounts(val: &[u64; 4]) -> u64 {
     val.iter().fold(0, |a, b| b.wrapping_add(a))
 }
@@ -713,7 +694,7 @@ pub fn consume_events_once(
     account_metas: Vec<AccountMeta>,
     to_consume: usize,
     _thread_number: usize,
-    event_q: Pubkey,
+    _event_q: Pubkey,
 ) -> Result<Signature> {
     let _start = std::time::Instant::now();
     let instruction_data: Vec<u8> = MarketInstruction::ConsumeEvents(to_consume as u16).pack();
@@ -1462,48 +1443,6 @@ pub fn match_orders(
     Ok(())
 }
 
-fn create_account(
-    client: &RpcClient,
-    mint_pubkey: &Pubkey,
-    owner_pubkey: &Pubkey,
-    payer: &Keypair,
-) -> Result<Keypair> {
-    let spl_account = Keypair::new();
-    let signers = vec![payer, &spl_account];
-
-    let lamports = client.get_minimum_balance_for_rent_exemption(spl_token::state::Account::LEN)?;
-
-    let create_account_instr = solana_system_interface::instruction::create_account(
-        &payer.pubkey(),
-        &spl_account.pubkey(),
-        lamports,
-        spl_token::state::Account::LEN as u64,
-        &spl_token::ID,
-    );
-
-    let init_account_instr = token_instruction::initialize_account(
-        &spl_token::ID,
-        &spl_account.pubkey(),
-        &mint_pubkey,
-        &owner_pubkey,
-    )?;
-
-    let instructions = vec![create_account_instr, init_account_instr];
-
-    let recent_hash = client.get_latest_blockhash()?;
-
-    let txn = Transaction::new_signed_with_payer(
-        &instructions,
-        Some(&payer.pubkey()),
-        &signers,
-        recent_hash,
-    );
-
-    debug_println!("Creating account: {} ...", spl_account.pubkey());
-    send_txn(client, &txn, false)?;
-    Ok(spl_account)
-}
-
 fn mint_to_existing_account(
     client: &RpcClient,
     payer: &Keypair,
@@ -1564,10 +1503,10 @@ fn initialize_token_account(client: &RpcClient, mint: &Pubkey, owner: &Keypair) 
     Ok(recip_keypair)
 }
 
-enum MonitorEvent {
-    NumEvents(usize),
-    NewConn(std::net::TcpStream),
-}
+// enum MonitorEvent {
+//     NumEvents(usize),
+//     NewConn(std::net::TcpStream),
+// }
 
 async fn read_queue_length_loop(
     client: RpcClient,
@@ -1592,4 +1531,70 @@ async fn read_queue_length_loop(
     });
 
     Ok(warp::serve(get_data).run(([127, 0, 0, 1], port)).await)
+}
+
+#[allow(dead_code)]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use serum_dex::state::Request;
+    use serum_dex::state::RequestQueueHeader;
+
+    fn parse_req_queue(data_words: &[u64]) -> Result<(RequestQueueHeader, &[Request], &[Request])> {
+        let (header_words, request_words) =
+            data_words.split_at(size_of::<RequestQueueHeader>() >> 3);
+        let header: RequestQueueHeader = transmute_one_pedantic(transmute_to_bytes(header_words))
+            .map_err(|e| e.without_src())?;
+        let request: &[Request] =
+            transmute_many::<_, SingleManyGuard>(transmute_to_bytes(request_words))
+                .map_err(|e| e.without_src())?;
+        let (tail_seg, head_seg) = request.split_at(header.head() as usize);
+        let head_len = head_seg.len().min(header.count() as usize);
+        let tail_len = header.count() as usize - head_len;
+        Ok((header, &head_seg[..head_len], &tail_seg[..tail_len]))
+    }
+
+    fn create_account(
+        client: &RpcClient,
+        mint_pubkey: &Pubkey,
+        owner_pubkey: &Pubkey,
+        payer: &Keypair,
+    ) -> Result<Keypair> {
+        let spl_account = Keypair::new();
+        let signers = vec![payer, &spl_account];
+
+        let lamports =
+            client.get_minimum_balance_for_rent_exemption(spl_token::state::Account::LEN)?;
+
+        let create_account_instr = solana_system_interface::instruction::create_account(
+            &payer.pubkey(),
+            &spl_account.pubkey(),
+            lamports,
+            spl_token::state::Account::LEN as u64,
+            &spl_token::ID,
+        );
+
+        let init_account_instr = token_instruction::initialize_account(
+            &spl_token::ID,
+            &spl_account.pubkey(),
+            &mint_pubkey,
+            &owner_pubkey,
+        )?;
+
+        let instructions = vec![create_account_instr, init_account_instr];
+
+        let recent_hash = client.get_latest_blockhash()?;
+
+        let txn = Transaction::new_signed_with_payer(
+            &instructions,
+            Some(&payer.pubkey()),
+            &signers,
+            recent_hash,
+        );
+
+        debug_println!("Creating account: {} ...", spl_account.pubkey());
+        send_txn(client, &txn, false)?;
+        Ok(spl_account)
+    }
 }

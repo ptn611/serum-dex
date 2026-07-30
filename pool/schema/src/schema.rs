@@ -152,7 +152,10 @@ pub enum PoolRequestInner {
     /// - `[]` Initializer fee vault
     /// - `[]` Rent sysvar
     /// - `[]/[writable]` Any additional accounts needed to initialize the pool
-    Initialize(InitializePoolRequest),
+    Initialize(
+        #[allow(dead_code)]
+        InitializePoolRequest,
+    ),
 
     /// Get the creation, redemption, or swap basket.
     ///
@@ -167,7 +170,10 @@ pub enum PoolRequestInner {
     /// - `[writable]` retbuf account
     /// - `[]` retbuf program
     /// - `[]` Accounts in `PoolState::account_params`
-    GetBasket(PoolAction),
+    GetBasket(
+        #[allow(dead_code)]
+        PoolAction,
+    ),
 
     /// Perform a creation, redemption, or swap.
     ///
@@ -185,7 +191,10 @@ pub enum PoolRequestInner {
     /// - `[writable]` Referrer fee vault
     /// - `[]` spl-token program
     /// - `[]/[writable]` Accounts in `PoolState::account_params`
-    Execute(PoolAction),
+    Execute(
+        #[allow(dead_code)]
+        PoolAction,
+    ),
 }
 
 #[derive(Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, BorshSchema)]
@@ -200,11 +209,20 @@ pub struct InitializePoolRequest {
 #[derive(Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, BorshSchema)]
 pub enum PoolAction {
     /// Create pool tokens by depositing assets into the pool.
-    Create(u64),
+    Create(
+        #[allow(dead_code)]
+        u64,
+    ),
     /// Redeem pool tokens by burning the token and receiving assets from the pool.
-    Redeem(u64),
+    Redeem(
+        #[allow(dead_code)]
+        u64,
+    ),
     /// Deposit assets into the pool and receive other assets from the pool.
-    Swap(Vec<u64>),
+    Swap(
+        #[allow(dead_code)]
+        Vec<u64>,
+    ),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize, BorshSchema)]
